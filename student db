@@ -1,0 +1,166 @@
+import sqlite3
+import os
+
+
+def init_db():
+   
+    conn = sqlite3.connect("student_database.db")
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS students (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            age INTEGER NOT NULL,
+            grade TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+
+def add_student(name, age, grade, email):
+    try:
+        conn = sqlite3.connect("student_database.db")
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO students (name, age, grade, email) VALUES (?, ?, ?, ?)", 
+            (name, age, grade, email)
+        )
+        conn.commit()
+        print(f"\n[Success] Student '{name}' added successfully!")
+    except sqlite3.IntegrityError:
+        print("\n[Error] A student with this email already exists.")
+    finally:
+        conn.close()
+
+def view_students():
+    conn = sqlite3.connect("student_database.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM students")
+    records = cursor.fetchall()
+    conn.close()
+
+    if not records:
+        print("\n[Info] No student records found.")
+        return
+
+    print("\n" + "="*60)
+    print(f"{'ID':<5} | {'Name':<20} | {'Age':<5} | {'Grade':<6} | {'Email':<20}")
+    print("="*60)
+    for row in records:
+        print(f"{row[0]:<5} | {row[1]:<20} | {row[2]:<5} | {row[3]:<6} | {row[4]:<20}")
+    print("="*60)
+
+def update_student(student_id, name, age, grade, email):
+    conn = sqlite3.connect("student_database.db")
+    cursor = conn.cursor()
+    
+    
+    cursor.execute("SELECT * FROM students WHERE id = ?", (student_id,))
+    if not cursor.fetchone():
+        print(f"\n[Error] Student with ID {student_id} not found.")
+        conn.close()
+        return
+
+    try:
+        cursor.execute('''
+            UPDATE students 
+            SET name = ?, age = ?, grade = ?, email = ? 
+            WHERE id = ?
+        ''', (name, age, grade, email, student_id))
+        conn.commit()
+        print(f"\n[Success] Student ID {student_id} updated successfully!")
+    except sqlite3.IntegrityError:
+        print("\n[Error] Could not update. Email might be in use by another student.")
+    finally:
+        conn.close()
+
+def delete_student(student_id):
+    conn = sqlite3.connect("student_database.db")
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM students WHERE id = ?", (student_id,))
+    if not cursor.fetchone():
+        print(f"\n[Error] Student with ID {student_id} not found.")
+        conn.close()
+        return
+
+    cursor.execute("SELECT * FROM students WHERE id = ?", (student_id,))
+    cursor.execute("DELETE FROM students WHERE id = ?", (student_id,))
+    conn.commit()
+    print(f"\n[Success] Student ID {student_id} deleted successfully!")
+    conn.close()
+
+
+def main():
+    init_db()
+    
+    while True:
+        print("\n--- Student Database Management System ---")
+        print("1. Add Student")
+        print("2. View All Students")
+        print("3. Update Student Record")
+        print("4. Delete Student Record")
+        print("5. Exit")
+        
+        choice = input("Enter your choice (1-5): ").strip()
+        
+        if choice == '1':
+            name = input("Enter Name: ").strip()
+            try:
+                age = int(input("Enter Age: ").strip())
+            except ValueError:
+                print("[Error] Age must be a number.")
+                continue
+            grade = input("Enter Grade (e.g., A, B, 10th): ").strip()
+            email = input("Enter Email: ").strip()
+            
+            if name and grade and email:
+                add_student(name, age, grade, email)
+            else:
+                print("[Error] All fields are required.")
+                
+        elif choice == '2':
+            view_students()
+            
+        elif choice == '3':
+            try:
+                student_id = int(input("Enter Student ID to update: ").strip())
+            except ValueError:
+                print("[Error] ID must be a number.")
+                continue
+            print("Enter new details:")
+            name = input("Enter Name: ").strip()
+            try:
+                age = int(input("Enter Age: ").strip())
+            except ValueError:
+                print("[Error] Age must be a number.")
+                continue
+            grade = input("Enter Grade: ").strip()
+            email = input("Enter Email: ").strip()
+            
+            if name and grade and email:
+                update_student(student_id, name, age, grade, email)
+            else:
+                print("[Error] All fields are required.")
+                
+        elif choice == '4':
+            try:
+                student_id = int(input("Enter Student ID to delete: ").strip())
+            except ValueError:
+                print("[Error] ID must be a number.")
+                continue
+            confirm = input(f"Are you sure you want to delete ID {student_id}? (y/n): ").strip().lower()
+            if confirm == 'y':
+                delete_student(student_id)
+                
+        elif choice == '5':
+            print("\nExiting system. Goodbye!")
+            break
+        else:
+            print("[Error] Invalid choice. Please enter a number between 1 and 5.")
+
+if __name__ == "__main__":
+    main()
+explain this program line by line
